@@ -122,8 +122,9 @@ function normalizeRepoUrl(url: string): string {
   return url
     .replace(/\/+$/, "")
     .replace(/\.git$/, "")
-    .replace(/\/tree\/.*$/, "")
-    .replace(/\/blob\/.*$/, "");
+    .replace(/\/tree\/.*$/, "") // GitHub/GitLab branch URLs
+    .replace(/\/blob\/.*$/, "") // GitHub/GitLab file URLs
+    .replace(/\/src\/.*$/, ""); // Bitbucket branch URLs
 }
 
 /**

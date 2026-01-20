@@ -88,6 +88,11 @@ export function extractRepoUrl(
     url = `https://github.com/${url.slice(7)}`;
   }
 
+  // Handle Bitbucket shorthand
+  if (url.startsWith("bitbucket:")) {
+    url = `https://bitbucket.org/${url.slice(10)}`;
+  }
+
   return {
     url,
     directory: repo.directory,
