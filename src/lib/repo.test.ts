@@ -71,6 +71,26 @@ describe("parseRepoSpec", () => {
         ref: undefined,
       });
     });
+
+    it("parses bitbucket:owner/repo@ref", () => {
+      const result = parseRepoSpec("bitbucket:atlassian/python-bitbucket@v2.0.0");
+      expect(result).toEqual({
+        host: "bitbucket.org",
+        owner: "atlassian",
+        repo: "python-bitbucket",
+        ref: "v2.0.0",
+      });
+    });
+
+    it("parses bitbucket:owner/repo#ref", () => {
+      const result = parseRepoSpec("bitbucket:atlassian/python-bitbucket#main");
+      expect(result).toEqual({
+        host: "bitbucket.org",
+        owner: "atlassian",
+        repo: "python-bitbucket",
+        ref: "main",
+      });
+    });
   });
 
   describe("full URLs", () => {
@@ -123,6 +143,36 @@ describe("parseRepoSpec", () => {
         ref: undefined,
       });
     });
+
+    it("parses https://bitbucket.org/owner/repo", () => {
+      const result = parseRepoSpec("https://bitbucket.org/atlassian/python-bitbucket");
+      expect(result).toEqual({
+        host: "bitbucket.org",
+        owner: "atlassian",
+        repo: "python-bitbucket",
+        ref: undefined,
+      });
+    });
+
+    it("parses https://bitbucket.org/owner/repo.git", () => {
+      const result = parseRepoSpec("https://bitbucket.org/atlassian/python-bitbucket.git");
+      expect(result).toEqual({
+        host: "bitbucket.org",
+        owner: "atlassian",
+        repo: "python-bitbucket",
+        ref: undefined,
+      });
+    });
+
+    it("parses https://bitbucket.org/owner/repo/src/branch", () => {
+      const result = parseRepoSpec("https://bitbucket.org/atlassian/python-bitbucket/src/master");
+      expect(result).toEqual({
+        host: "bitbucket.org",
+        owner: "atlassian",
+        repo: "python-bitbucket",
+        ref: "master",
+      });
+    });
   });
 
   describe("host/owner/repo format", () => {
@@ -142,6 +192,16 @@ describe("parseRepoSpec", () => {
         host: "gitlab.com",
         owner: "gitlab-org",
         repo: "gitlab",
+        ref: undefined,
+      });
+    });
+
+    it("parses bitbucket.org/owner/repo", () => {
+      const result = parseRepoSpec("bitbucket.org/atlassian/python-bitbucket");
+      expect(result).toEqual({
+        host: "bitbucket.org",
+        owner: "atlassian",
+        repo: "python-bitbucket",
         ref: undefined,
       });
     });
@@ -305,6 +365,14 @@ describe("displayNameToSpec", () => {
       host: "gitlab.com",
       owner: "owner",
       repo: "repo",
+    });
+  });
+
+  it("parses bitbucket host", () => {
+    expect(displayNameToSpec("bitbucket.org/atlassian/python-bitbucket")).toEqual({
+      host: "bitbucket.org",
+      owner: "atlassian",
+      repo: "python-bitbucket",
     });
   });
 

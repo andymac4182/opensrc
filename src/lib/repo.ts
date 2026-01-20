@@ -10,13 +10,17 @@ const DEFAULT_HOST = "github.com";
  * - github:owner/repo
  * - github:owner/repo@ref
  * - gitlab:owner/repo
+ * - bitbucket:owner/repo
  * - owner/repo (defaults to github.com)
  * - owner/repo@ref
  * - owner/repo#ref
  * - https://github.com/owner/repo
  * - https://gitlab.com/owner/repo
+ * - https://bitbucket.org/owner/repo
  * - https://github.com/owner/repo/tree/branch
+ * - https://bitbucket.org/owner/repo/src/branch
  * - github.com/owner/repo
+ * - bitbucket.org/owner/repo
  */
 export function parseRepoSpec(spec: string): RepoSpec | null {
   let input = spec.trim();
@@ -53,10 +57,13 @@ export function parseRepoSpec(spec: string): RepoSpec | null {
         repo = repo.slice(0, -4);
       }
 
-      // Handle /tree/branch or /blob/branch URLs
+      // Handle /tree/branch or /blob/branch URLs (GitHub/GitLab)
+      // Handle /src/branch URLs (Bitbucket)
       if (
         pathParts.length >= 4 &&
-        (pathParts[2] === "tree" || pathParts[2] === "blob")
+        (pathParts[2] === "tree" ||
+          pathParts[2] === "blob" ||
+          pathParts[2] === "src")
       ) {
         ref = pathParts[3];
       }
@@ -166,6 +173,21 @@ interface GitLabApiResponse {
   web_url: string;
 }
 
+interface BitbucketApiResponse {
+  mainbranch?: {
+    name: string;
+  };
+  links: {
+    html: {
+      href: string;
+    };
+    clone: Array<{
+      name: string;
+      href: string;
+    }>;
+  };
+}
+
 /**
  * Resolve a repo spec to full repository information using the appropriate API
  */
@@ -176,6 +198,8 @@ export async function resolveRepo(spec: RepoSpec): Promise<ResolvedRepo> {
     return resolveGitHubRepo(host, owner, repo, ref);
   } else if (host === "gitlab.com") {
     return resolveGitLabRepo(host, owner, repo, ref);
+  } else if (host === "bitbucket.org") {
+    return resolveBitbucketRepo(host, owner, repo, ref);
   } else {
     // For unsupported hosts, assume default branch is "main"
     return {
@@ -270,6 +294,51 @@ async function resolveGitLabRepo(
     repo,
     ref: resolvedRef,
     repoUrl: `https://gitlab.com/${owner}/${repo}`,
+    displayName: `${host}/${owner}/${repo}`,
+  };
+}
+
+async function resolveBitbucketRepo(
+  host: string,
+  owner: string,
+  repo: string,
+  ref?: string,
+): Promise<ResolvedRepo> {
+  const apiUrl = `https://api.bitbucket.org/2.0/repositories/${owner}/${repo}`;
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "opensrc-cli",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(
+        `Repository "${owner}/${repo}" not found on Bitbucket. ` +
+          `Make sure it exists and is public.`,
+      );
+    }
+    if (response.status === 403) {
+      throw new Error(
+        `Bitbucket API access denied. The repository may be private.`,
+      );
+    }
+    throw new Error(
+      `Failed to fetch repository info: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as BitbucketApiResponse;
+  const resolvedRef = ref || data.mainbranch?.name || "main";
+
+  return {
+    host,
+    owner,
+    repo,
+    ref: resolvedRef,
+    repoUrl: `https://bitbucket.org/${owner}/${repo}`,
     displayName: `${host}/${owner}/${repo}`,
   };
 }
