@@ -93,11 +93,6 @@ export function extractRepoUrl(
     url = `https://bitbucket.org/${url.slice(10)}`;
   }
 
-  // Handle GitLab shorthand
-  if (url.startsWith("gitlab:")) {
-    url = `https://gitlab.com/${url.slice(7)}`;
-  }
-
   return {
     url,
     directory: repo.directory,
